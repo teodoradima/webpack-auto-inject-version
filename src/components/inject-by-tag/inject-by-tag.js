@@ -1,6 +1,6 @@
 import dateFormat from 'dateformat';
-import log from 'core/log';
-import config from 'config';
+import log from '../../core/log';
+import config from '../../config';
 
 /**
  * Inject version number into HTML
@@ -21,7 +21,7 @@ export default class InjectByTag {
    * @return {Promise}
    */
   apply() {
-    this.context.compiler.plugin('emit', (compilation, cb) => {
+    this.context.compiler.hooks.emit.tapAsync('emit', (compilation, cb) => {
       // for every output file
       for (const basename in compilation.assets) {
         // only if match regex

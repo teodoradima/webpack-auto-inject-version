@@ -2,9 +2,9 @@ import path from 'path';
 import fs from 'fs';
 
 import semver from 'semver';
-import { isArgv } from 'core/utils';
-import log from 'core/log';
-import config from 'config';
+import { isArgv } from '../../core/utils';
+import log from '../../core/log';
+import config from '../../config';
 
 export default class AutoIncreaseVersion {
 
@@ -32,7 +32,7 @@ export default class AutoIncreaseVersion {
     // we have to register AutoIncreaseVersion instead of firing it straight away
     if (config.componentsOptions.AutoIncreaseVersion.runInWatchMode) {
       if (this.context.compiler) {
-        this.context.compiler.plugin('emit', (compilation, cb) => {
+        this.context.compiler.hooks.emit.tapAsync('emit', (compilation, cb) => {
           this.start();
           cb();
         });

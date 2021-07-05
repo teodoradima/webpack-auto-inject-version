@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 
-import config from 'config';
-import { isArgv } from 'core/utils';
+import config from '../config';
+import { isArgv } from '../core/utils';
 
 const endOfLine = require('os').EOL;
 

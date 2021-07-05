@@ -1,16 +1,16 @@
 /* global define */
 import fs from 'fs';
 import path from 'path';
-
-import config from 'config';
-import log from 'core/log';
 import merge from 'lodash/merge';
 import transform from 'lodash/transform';
 
+import config from './config';
+import log from './core/log';
+
 // import sub components
-import AutoIncreaseVersion from 'components/auto-increase-version/auto-increase-version';
-import InjectAsComment from 'components/inject-as-comment/inject-as-comment';
-import InjectByTag from 'components/inject-by-tag/inject-by-tag';
+import AutoIncreaseVersion from './components/auto-increase-version/auto-increase-version';
+import InjectAsComment from './components/inject-as-comment/inject-as-comment';
+import InjectByTag from './components/inject-by-tag/inject-by-tag';
 
 export default class WebpackAutoInject {
 

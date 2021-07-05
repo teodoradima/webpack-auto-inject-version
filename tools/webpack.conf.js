@@ -12,12 +12,10 @@ export default {
     libraryTarget: 'umd',
   },
   module: {
-    loaders: [
+    rules: [
       {
         test: /\.js$/,
-        use: [
-          'babel-loader',
-        ],
+        use: { loader: 'babel-loader' },
         include: [
           path.resolve('src'),
         ],
