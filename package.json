@@ -22,7 +22,7 @@
     "babel-preset-node5": "^12.0.1",
     "babel-preset-react": "^6.24.1",
     "babel-preset-stage-2": "^6.24.1",
-    "chalk": "^1.1.3",
+    "chalk": "^4.1.1",
     "dateformat": "^2.0.0",
     "eslint": "^2.7.0",
     "eslint-config-airbnb": "^6.2.0",

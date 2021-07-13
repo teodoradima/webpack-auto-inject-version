@@ -1,4 +1,7 @@
 import dateFormat from 'dateformat';
+import chalk from 'chalk';
+import { SourceMapSource, ReplaceSource, RawSource } from 'webpack-sources';
+
 import log from '../../core/log';
 import config from '../../config';
 
@@ -21,44 +24,52 @@ export default class InjectByTag {
    * @return {Promise}
    */
   apply() {
-    this.context.compiler.hooks.emit.tapAsync('emit', (compilation, cb) => {
-      // for every output file
-      for (const basename in compilation.assets) {
-        // only if match regex
-        if (this.context.config.componentsOptions.InjectByTag.fileRegex.test(basename)) {
-          let replaced = 0;
-          const asset = compilation.assets[basename];
+    this.context.compiler.hooks.compilation.tap(InjectByTag.componentName, (compilation) => {
+      compilation.hooks.optimizeChunkAssets.tap(InjectByTag.componentName, (chunks) => {
+        chunks.forEach((chunk) => {
+          chunk.files.forEach((file) => {
+            if (!this.context.config.componentsOptions.InjectByTag.fileRegex.test(file)) {
+              return;
+            }
+            let replaced = 0;
+            const asset = compilation.assets[file];
+            const newSource = new ReplaceSource(asset);
+            const AIVTagRegexp = this.context.config.componentsOptions.InjectByTag.AIVTagRegexp;
+            const source = asset.source();
 
-          const originalSource = asset.source();
-          if (!originalSource || typeof originalSource.replace !== 'function') {
-            continue;
-          }
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+              const match = AIVTagRegexp.exec(source);
+              if (!match) break;
+              replaced++;
+              const newVal = this.replace(match[0]);
+              newSource.replace(match.index, match.index + match[0].length - 1, newVal);
+            }
 
-          const modFile = originalSource.replace(this.context.config.componentsOptions.InjectByTag.AIVTagRegexp, (tag) => {
-            // handle version
-            tag = tag.replace(/(\{)(version)(\})/g, () => {
-              return this.context.version;
-            });
-
-            // handle date
-            tag = tag.replace(/(\{)(date)(\})/g, () => {
-              return dateFormat(new Date(), config.componentsOptions.InjectByTag.dateFormat);
-            });
-
-            // remove [AIV] and [/AIV]
-            tag = tag.replace(/(\[AIV])|(\[\/AIV])/g, '');
-
-            replaced++;
-
-            return tag;
+            compilation.assets[file] = newSource;
+            log.info(`${chalk.red('InjectByTag')} : match : ${file} : replaced : ${replaced}`);
           });
+        });
+      });
 
-          asset.source = () => modFile;
-          log.info(`InjectByTag : match : ${basename} : replaced : ${replaced}`);
-        }
-      }
-      cb();
     });
     return new Promise((resolve) => { resolve(); });
+  }
+
+  replace(tag) {
+    // handle version
+    tag = tag.replace(/(\{)(version)(\})/g, () => {
+      return this.context.version;
+    });
+
+    // handle date
+    tag = tag.replace(/(\{)(date)(\})/g, () => {
+      return dateFormat(new Date(), this.context.config.componentsOptions.InjectByTag.dateFormat);
+    });
+
+    // remove [AIV] and [/AIV]
+    tag = tag.replace(/(\[AIV])|(\[\/AIV])/g, '');
+
+    return tag;
   }
 }

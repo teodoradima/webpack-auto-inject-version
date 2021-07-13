@@ -2,6 +2,7 @@
 Adds version from package.json into every single file as top comment block.
 
 ### forked from https://www.npmjs.com/package/webpack-auto-inject-version
+## 🚨🚨🚨 tested only with inject by tag 🚨🚨🚨
 # Install
 
 ```console
