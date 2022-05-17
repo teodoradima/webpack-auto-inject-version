@@ -1,6 +1,6 @@
 {
   "name": "webpack-auto-inject-version-next",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "repository": "teodoradima/webpack-auto-inject-version",
   "description": "Webpack plugin for auto inject version from package.json",
   "main": "dist/WebpackAutoInjectVersion.js",
