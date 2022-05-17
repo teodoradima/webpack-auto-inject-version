@@ -1,9 +1,12 @@
 import path from 'path';
 
+import { ReplaceSource } from 'webpack-sources';
+
+import tags from './tags';
+
 import config from '../../config';
 import log from '../../core/log';
 
-import tags from './tags';
 
 const endOfLine = require('os').EOL;
 
@@ -29,18 +32,22 @@ export default class InjectAsComment {
    * @return {Promise}
    */
   apply() {
-    // bind into emit hook
-    this.context.compiler.hooks.emit.tapAsync('emit', (compilation, cb) => {
-      // iterate over all assets file in compilation
-      for (const basename in compilation.assets) {
-        // bug fix, extname is not able to handle chunk file params index.js?random123
-        const ext = path.extname(basename).replace(/(\?)(.){0,}/, '');
-        const asset = compilation.assets[basename];
-        this._handleAssetFile(ext, asset);
-        log.info(`InjectAsComment : match : ${basename} : injected : ${this.context.version}`);
-      }
-      cb();
+    this.context.compiler.hooks.compilation.tap(InjectAsComment.componentName, (compilation) => {
+      compilation.hooks.optimizeChunkAssets.tap(InjectAsComment.componentName, (chunks) => {
+        chunks.forEach((chunk) => {
+          chunk.files.forEach((file) => {
+            // bug fix, extname is not able to handle chunk file params index.js?random123
+            const ext = path.extname(file).replace(/(\?)(.){0,}/, '');
+            const asset = compilation.assets[file];
+            const newSource = new ReplaceSource(asset);
+            this._handleAssetFile(ext, newSource);
+            log.info(`InjectAsComment : match : ${file} : injected : ${this.context.version}`);
+            compilation.assets[file] = newSource;
+          });
+        });
+      });
     });
+    return Promise.resolve();
   }
 
   /**
@@ -49,23 +56,21 @@ export default class InjectAsComment {
    * @param ext
    * @param asset
    * @private
+   * @return {ReplaceSource}
    */
   _handleAssetFile(ext, asset) {
     switch (ext) {
       case '.js': {
-        this.injectIntoJs(asset);
-        break;
+        return this.injectIntoJs(asset);
       }
       case '.html': {
-        this.injectIntoHtml(asset);
-        break;
+        return this.injectIntoHtml(asset);
       }
       case '.css': {
-        this.injectIntoCss(asset);
-        break;
+        return this.injectIntoCss(asset);
       }
       default:
-        break;
+        return null;
     }
   }
 
@@ -99,11 +104,12 @@ export default class InjectAsComment {
    * @private
    *
    * @param asset
+   *
+   * @return {ReplaceSource}
    */
   injectIntoCss(asset) {
-    let modAsset = this.parseTags(`/** [${config.SHORT}] `, ' **/ ');
-    modAsset += `${endOfLine} ${asset.source()} `;
-    asset.source = () => modAsset;
+    asset.insert(0, `${this.parseTags(`/** [${config.SHORT}] `, ' **/ ')}${endOfLine}`);
+    return asset;
   }
 
   /**
@@ -113,11 +119,12 @@ export default class InjectAsComment {
    * @private
    *
    * @param asset
+   *
+   * @return {ReplaceSource}
    */
   injectIntoHtml(asset) {
-    let modAsset = this.parseTags(`<!-- [${config.SHORT}] `, ' --> ');
-    modAsset += `${endOfLine} ${asset.source()} `;
-    asset.source = () => modAsset;
+    asset.insert(0, `${this.parseTags(`<!-- [${config.SHORT}] `, ' --> ')}${endOfLine}`);
+    return asset;
   }
 
   /**
@@ -127,15 +134,15 @@ export default class InjectAsComment {
    * @private
    *
    * @param asset
+   *
+   * @return {ReplaceSource}
    */
   injectIntoJs(asset) {
-    let modAsset;
-    if (this.context.config.componentsOptions.InjectAsComment.multiLineCommentType) {
-      modAsset = this.parseTags(`/** [${config.SHORT}] `, '*/ ');
-    } else {
-      modAsset = this.parseTags(`// [${config.SHORT}] `, ' ');
-    }
-    modAsset += `${endOfLine} ${asset.source()} `;
-    asset.source = () => modAsset;
+    asset.insert(0,
+      this.context.config.componentsOptions.InjectAsComment.multiLineCommentType ?
+        `${this.parseTags(`/** [${config.SHORT}] `, '*/ ')}${endOfLine}` :
+        `${this.parseTags(`// [${config.SHORT}] `, ' ')}${endOfLine}`
+    );
+    return asset;
   }
 }
